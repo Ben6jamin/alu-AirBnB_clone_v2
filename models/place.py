@@ -40,7 +40,7 @@ class Place(BaseModel, Base):
     # create amenity_ids list to store all Amenity.id linked to the Place
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.amenity_ids = [] 
+        self.amenity_ids =[] 
         
     amenity_id = []
 
