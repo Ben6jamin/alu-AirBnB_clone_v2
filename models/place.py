@@ -41,6 +41,7 @@ class Place(BaseModel, Base):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.amenity_ids = []
+
     amenity_id = []
 
     if storage_type == "db":
