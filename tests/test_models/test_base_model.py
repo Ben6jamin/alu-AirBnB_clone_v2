@@ -8,13 +8,18 @@ import json
 import os
 
 
-class TestBaseModel(unittest.TestCase):
+class test_basemodel(unittest.TestCase):
     """ """
+
+    def __init__(self, *args, **kwargs):
+        """ """
+        super().__init__(*args, **kwargs)
+        self.name = 'BaseModel'
+        self.value = BaseModel
 
     def setUp(self):
         """ """
-        self.name = 'BaseModel'
-        self.value = BaseModel
+        pass
 
     def tearDown(self):
         try:
@@ -54,7 +59,8 @@ class TestBaseModel(unittest.TestCase):
     def test_str(self):
         """ """
         i = self.value()
-        self.assertEqual(str(i), '[{}] ({}) {}'.format(self.name, i.id, i.__dict__))
+        self.assertEqual(str(i), '[{}] ({}) {}'.format(self.name, i.id,
+                         i.__dict__))
 
     def test_todict(self):
         """ """
@@ -91,7 +97,3 @@ class TestBaseModel(unittest.TestCase):
         n = new.to_dict()
         new = BaseModel(**n)
         self.assertFalse(new.created_at == new.updated_at)
-
-
-if __name__ == '__main__':
-    unittest.main()
