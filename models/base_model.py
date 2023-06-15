@@ -3,19 +3,21 @@
 import uuid
 from datetime import datetime
 # import important sqlalchemy modules
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from os import environ
+
+# print format of create_engine
+# 'mysql+mysqldb://<username>:<password>@<host>:<port>/<db_name>'
+# connect with the mysql database
 
 Base = declarative_base()
 
 storage_type = 'HBNB_TYPE_STORAGE'
 
 
-class BaseModel(Base):
+class BaseModel:
     """A base class for all hbnb models"""
-
-    __tablename__ = 'base_model'
 
     id = Column(String(60), primary_key=True, nullable=False,
                 default=str(uuid.uuid4()))
@@ -50,9 +52,16 @@ class BaseModel(Base):
             self.id = str(uuid.uuid4())
             self.created_at = self.updated_at = datetime.now()
 
+            # kwargs['updated_at'] = datetime.strptime(kwargs['updated_at'],
+            #                                          '%Y-%m-%dT%H:%M:%S.%f')
+            # kwargs['created_at'] = datetime.strptime(kwargs['created_at'],
+            #                                          '%Y-%m-%dT%H:%M:%S.%f')
+            # del kwargs['__class__']
+            # self.__dict__.update(kwargs)
+
     def __str__(self):
         """Returns a string representation of the instance"""
-        cls = self.__class__.__name__
+        cls = (str(type(self)).split('.')[-1]).split('\'')[0]
         return '[{}] ({}) {}'.format(cls, self.id, self.__dict__)
 
     def save(self):
@@ -64,11 +73,14 @@ class BaseModel(Base):
 
     def to_dict(self):
         """Convert instance into dict format"""
-        dictionary = self.__dict__.copy()
-        dictionary['__class__'] = self.__class__.__name__
+        dictionary = {}
+        dictionary.update(self.__dict__)
+        dictionary.update({'__class__':
+                          (str(type(self)).split('.')[-1]).split('\'')[0]})
         dictionary['created_at'] = self.created_at.isoformat()
         dictionary['updated_at'] = self.updated_at.isoformat()
-        dictionary.pop('_sa_instance_state', None)
+        if '_sa_instance_state' in dictionary:
+            del dictionary['_sa_instance_state']
         return dictionary
 
 # create all the tables
