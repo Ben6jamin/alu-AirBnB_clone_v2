@@ -25,7 +25,7 @@ class test_User(test_basemodel):
 
     def test_email(self):
         """ """
-        new = self.value()
+        new = self.value(email='test@gmail.com')
         self.assertEqual(type(new.email), str)
 
     def test_password(self):
