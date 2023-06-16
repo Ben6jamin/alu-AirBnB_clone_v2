@@ -1,34 +1,28 @@
 #!/usr/bin/python3
-""" State Module for HBNB project """
+""" State Module for HBNB project for AirBNB_clone_v2"""
+
+
 from models.base_model import BaseModel, Base
-# import sqlalchemy modules
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.orderinglist import ordering_list
+from models.engine.file_storage import FileStorage
+from os import getenv
 
 
 class State(BaseModel, Base):
-
-    """This is the class for State
-    Attributes:
-        name: input name
-    """
-    __tablename__ = "states"
-    # write a code to make BaseModel column order first in the table
-
+    """ State class definition in the next line"""
+    __tablename__ = 'states'
     name = Column(String(128), nullable=False)
-    cities = relationship("City", cascade='all, delete, delete-orphan',
-                          backref="state")
-    # write a code to make BaseModel column order first in the table
+    cities = relationship('City', backref='state', cascade="all, delete")
 
-    @property
-    def cities(self):
-        """getter attribute cities that returns the list of City objects
-        from storage linked to the current State"""
-        from models import storage
-        from models.city import City
-        cities = []
-        for key, value in storage.all(City).items():
-            if value.state_id == self.id:
-                cities.append(value)
-        return cities
+    if getenv("HBNB_TYPE_STORAGE") != 'db':
+        @property
+        def cities(self):
+            from models import storage
+            from models.city import City
+            """Get a list of all related City objects."""
+            city_list = []
+            for city in list(storage.all(City).values()):
+                if city.state_id == self.id:
+                    city_list.append(city)
+            return city_list
