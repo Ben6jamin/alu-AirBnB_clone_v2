@@ -7,7 +7,7 @@ from os.path import exists
 from datetime import datetime
 
 # Update the IP addresses with your own web servers
-env.hosts = ['<IP web-01>', '<IP web-02>']
+env.hosts = ['54.160.134.25', '54.221.31.148']
 env.user = 'ubuntu'  # Update with your username
 env.key_filename = 'path/to/your/ssh/private/key'  # Update with your SSH private key path
 env.warn_only = True
