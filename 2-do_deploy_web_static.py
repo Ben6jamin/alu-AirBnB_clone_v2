@@ -29,7 +29,8 @@ def do_deploy(archive_path):
         archive_name = archive_file.split('.')[0]
         release_path = '/data/web_static/releases/' + archive_name
         run('mkdir -p {}'.format(release_path))
-        run('tar -xzf /tmp/{} -C {}'.format(archive_file, release_path))
+        run('tar -xzf /tmp/{} -C {}'.format(
+            archive_file, release_path))
 
         # Move files from extracted folder to release path and remove unnecessary folder
         run('mv {}/web_static/* {}/'.format(release_path, release_path))
