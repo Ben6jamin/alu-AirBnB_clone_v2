@@ -1,80 +1,88 @@
 #!/usr/bin/python3
-"""
-Fabric script that creates and distributes an archive to your web servers
-"""
-from fabric.api import env, put, run
+"""Comment"""
+from fabric.api import *
+import os
+import re
 from datetime import datetime
-from os.path import exists
-from fabric.contrib import files
-from fabric.api import local
 
-
-# Update the IP addresses with your own web servers
-env.hosts = ['<IP web-01>', '<IP web-02>']
-env.user = 'ubuntu'  # Update with your username
-env.key_filename = 'path/to/your/ssh/private/key'  # Update with your SSH private key path
-env.warn_only = True
+env.user = 'ubuntu'
+env.hosts = ['54.160.134.25', '54.221.31.148']
 
 
 def do_pack():
-    """
-    Creates a compressed archive of the web_static folder
-    """
-    try:
-        now = datetime.now().strftime("%Y%m%d%H%M%S")
-        archive_path = "versions/web_static_{}.tgz".format(now)
-        local("mkdir -p versions")
-        local("tar -cvzf {} "
-              "web_static".format(archive_path))
-        return archive_path
-    except:
+    """Function to compress files in an archive"""
+    local("mkdir -p versions")
+    filename = "versions/web_static_{}.tgz".format(datetime.strftime(
+        datetime.now(),
+        "%Y%m%d%H%M%S"))
+    result = local("tar -cvzf {} web_static"
+                   .format(filename))
+    if result.failed:
         return None
+    return filename
 
 
 def do_deploy(archive_path):
-    """
-    Distributes an archive to your web servers
-    """
-    if not exists(archive_path):
+    """Comment"""
+    if not os.path.isfile(archive_path):
         return False
 
-    try:
-        # Upload the archive to /tmp/ directory of the web server
-        put(archive_path, '/tmp/')
+    filename_regex = re.compile(r'[^/]+(?=\.tgz$)')
+    match = filename_regex.search(archive_path)
 
-        # Extract the archive to /data/web_static/releases/ directory
-        archive_file = archive_path.split('/')[-1]
-        archive_name = archive_file.split('.')[0]
-        release_path = '/data/web_static/releases/' + archive_name
-        run('mkdir -p {}'.format(release_path))
-        run('tar -xzf /tmp/{} '
-            '-C {}'.format(archive_file, release_path))
-
-        # Move files from extracted folder to release path and remove unnecessary folder
-        run('mv {}/web_static/* '
-            '{}/'.format(release_path, release_path))
-        run('rm -rf {}/web_static'.format(release_path))
-
-        # Delete the archive from the web server
-        run('rm /tmp/{}'.format(archive_file))
-
-        # Delete the current symbolic link
-        run('rm -rf /data/web_static/current')
-
-        # Create a new symbolic link
-        run('ln -s {} '
-            '/data/web_static/current'.format(release_path))
-
-        return True
-    except:
+    # Upload the archive to the /tmp/ directory of the web server
+    archive_filename = match.group(0)
+    result = put(archive_path, "/tmp/{}.tgz".format(archive_filename))
+    if result.failed:
         return False
+    # Uncompress the archive to the folder
+    #     /data/web_static/releases/<archive filename without extension> on
+    #     the web server
+
+    result = run(
+        "mkdir -p /data/web_static/releases/{}/".format(archive_filename))
+    if result.failed:
+        return False
+    result = run("tar -xzf /tmp/{}.tgz -C /data/web_static/releases/{}/"
+                 .format(archive_filename, archive_filename))
+    if result.failed:
+        return False
+
+    # Delete the archive from the web server
+    result = run("rm /tmp/{}.tgz".format(archive_filename))
+    if result.failed:
+        return False
+    result = run("mv /data/web_static/releases/{}"
+                 "/web_static/* /data/web_static/releases/{}/"
+                 .format(archive_filename, archive_filename))
+    if result.failed:
+        return False
+    result = run("rm -rf /data/web_static/releases/{}/web_static"
+                 .format(archive_filename))
+    if result.failed:
+        return False
+
+    # Delete the symbolic link /data/web_static/current from the web server
+    result = run("rm -rf /data/web_static/current")
+    if result.failed:
+        return False
+
+    #  Create a new the symbolic link
+    #  /data/web_static/current on the web server,
+    #     linked to the new version of your code
+    #     (/data/web_static/releases/<archive filename without extension>)
+    result = run("ln -s /data/web_static/releases/{}/ /data/web_static/current"
+                 .format(archive_filename))
+    if result.failed:
+        return False
+
+    return True
 
 
 def deploy():
-    """
-    Creates and distributes an archive to your web servers
-    """
-    archive_path = do_pack()
-    if archive_path is None:
+    """Deploy"""
+    archive_pack = do_pack()
+    if archive_pack is None:
         return False
-    return do_deploy(archive_path)
+    deployed = do_deploy(archive_pack)
+    return deployed
