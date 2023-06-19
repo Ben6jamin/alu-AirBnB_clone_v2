@@ -24,7 +24,8 @@ def do_pack():
         now = datetime.now().strftime("%Y%m%d%H%M%S")
         archive_path = "versions/web_static_{}.tgz".format(now)
         local("mkdir -p versions")
-        local("tar -cvzf {} web_static".format(archive_path))
+        local("tar -cvzf {} "
+              "web_static".format(archive_path))
         return archive_path
     except:
         return None
@@ -46,11 +47,12 @@ def do_deploy(archive_path):
         archive_name = archive_file.split('.')[0]
         release_path = '/data/web_static/releases/' + archive_name
         run('mkdir -p {}'.format(release_path))
-        run('tar -xzf /tmp/{} -C {}'.format(
-            archive_file, release_path))
+        run('tar -xzf /tmp/{} '
+            '-C {}'.format(archive_file, release_path))
 
         # Move files from extracted folder to release path and remove unnecessary folder
-        run('mv {}/web_static/* {}/'.format(release_path, release_path))
+        run('mv {}/web_static/* '
+            '{}/'.format(release_path, release_path))
         run('rm -rf {}/web_static'.format(release_path))
 
         # Delete the archive from the web server
@@ -60,7 +62,8 @@ def do_deploy(archive_path):
         run('rm -rf /data/web_static/current')
 
         # Create a new symbolic link
-        run('ln -s {} /data/web_static/current'.format(release_path))
+        run('ln -s {} '
+            '/data/web_static/current'.format(release_path))
 
         return True
     except:
