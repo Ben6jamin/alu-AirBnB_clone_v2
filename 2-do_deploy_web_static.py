@@ -9,7 +9,7 @@ from datetime import datetime
 # Update the IP addresses with your own web servers
 env.hosts = ['54.160.134.25', '54.221.31.148']
 env.user = 'ubuntu'  # Update with your username
-env.key_filename = 'C:\Users\kaluv\.ssh'  # Update with your SSH private key path
+env.key_filename = 'C:\Users\kaluv\.ssh\id_rsa'  # Update with your SSH private key path
 env.warn_only = True
 
 
