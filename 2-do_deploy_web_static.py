@@ -1,51 +1,77 @@
 #!/usr/bin/python3
-"""
-Fabric script that distributes an archive to your web servers
-"""
-from fabric.api import env, put, run, sudo
-from os.path import exists
+"""Comment"""
+from fabric.api import *
+import os
+import re
 from datetime import datetime
 
-# Update the IP addresses with your own web servers
+env.user = 'ubuntu'
 env.hosts = ['54.160.134.25', '54.221.31.148']
-env.user = 'ubuntu'  # Update with your username
-env.key_filename = 'C:\Users\kaluv\.ssh\id_rsa'  # Update with your SSH private key path
-env.warn_only = True
+
+
+def do_pack():
+    """Comm"""
+    local("mkdir -p versions")
+    result = local("tar -cvzf versions/web_static_{}.tgz web_static"
+                   .format(datetime.strftime(datetime.now(), "%Y%m%d%H%M%S")),
+                   capture=True)
+    if result.failed:
+        return None
+    return result
 
 
 def do_deploy(archive_path):
-    """
-    Distributes an archive to your web servers
-    """
-    if not exists(archive_path):
+    """Comment"""
+    if not os.path.isfile(archive_path):
         return False
 
-    try:
-        # Upload the archive to /tmp/ directory of the web server
-        put(archive_path, '/tmp/')
+    filename_regex = re.compile(r'[^/]+(?=\.tgz$)')
+    match = filename_regex.search(archive_path)
 
-        # Extract the archive to /data/web_static/releases/ directory
-        archive_file = archive_path.split('/')[-1]
-        archive_name = archive_file.split('.')[0]
-        release_path = '/data/web_static/releases/' + archive_name
-        run('mkdir -p {}'.format(release_path))
-        run('tar -xzf /tmp/{} -C {}'.format(archive_file, release_path))
-
-        # Move files from extracted folder to release path and remove unnecessary folder
-        run('mv {}/web_static/* {}/'.format(release_path, release_path))
-        run('rm -rf {}/web_static'.format(release_path))
-
-        # Delete the archive from the web server
-        run('rm /tmp/{}'.format(archive_file))
-
-        # Delete the current symbolic link
-        run('rm -rf /data/web_static/current')
-
-        # Create a new symbolic link
-        run('ln -s {} /data/web_static/current'.format(release_path))
-
-        print("New version deployed!")
-        return True
-    except Exception as e:
-        print(e)
+    # Upload the archive to the /tmp/ directory of the web server
+    archive_filename = match.group(0)
+    result = put(archive_path, "/tmp/{}.tgz".format(archive_filename))
+    if result.failed:
         return False
+    # Uncompress the archive to the folder
+    #     /data/web_static/releases/<archive filename without extension> on
+    #     the web server
+
+    result = run(
+        "mkdir -p /data/web_static/releases/{}/".format(archive_filename))
+    if result.failed:
+        return False
+    result = run("tar -xzf /tmp/{}.tgz -C /data/web_static/releases/{}/"
+                 .format(archive_filename, archive_filename))
+    if result.failed:
+        return False
+
+    # Delete the archive from the web server
+    result = run("rm /tmp/{}.tgz".format(archive_filename))
+    if result.failed:
+        return False
+    result = run("mv /data/web_static/releases/{}"
+                 "/web_static/* /data/web_static/releases/{}/"
+                 .format(archive_filename, archive_filename))
+    if result.failed:
+        return False
+    result = run("rm -rf /data/web_static/releases/{}/web_static"
+                 .format(archive_filename))
+    if result.failed:
+        return False
+
+    # Delete the symbolic link /data/web_static/current from the web server
+    result = run("rm -rf /data/web_static/current")
+    if result.failed:
+        return False
+
+    #  Create a new the symbolic link
+    #  /data/web_static/current on the web server,
+    #     linked to the new version of your code
+    #     (/data/web_static/releases/<archive filename without extension>)
+    result = run("ln -s /data/web_static/releases/{}/ /data/web_static/current"
+                 .format(archive_filename))
+    if result.failed:
+        return False
+
+    return True
